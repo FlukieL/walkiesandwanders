@@ -523,6 +523,83 @@
     });
 })();
 
+// Hero Background Video
+(function() {
+    'use strict';
+    
+    const videoContainer = document.getElementById('hero-video-container');
+    if (!videoContainer) return;
+    
+    // YouTube video ID from URL: https://www.youtube.com/watch?v=cFgZ218LgYQ
+    const videoId = 'cFgZ218LgYQ';
+    let player = null;
+    
+    // Generate random timestamp (3 minutes to 10 hours = 180 to 36000 seconds)
+    function getRandomTimestamp() {
+        // Start after 3 minutes (180 seconds) up to 10 hours (36000 seconds)
+        const minSeconds = 180; // 3 minutes
+        const maxSeconds = 36000; // 10 hours
+        return Math.floor(Math.random() * (maxSeconds - minSeconds + 1)) + minSeconds;
+    }
+    
+    // Load YouTube video with iframe, then use API to seek
+    function loadHeroVideo() {
+        const timestamp = getRandomTimestamp();
+        
+        // Create YouTube iframe with autoplay, mute, loop
+        const iframe = document.createElement('iframe');
+        iframe.id = 'hero-youtube-player';
+        iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1&enablejsapi=1&iv_load_policy=3`;
+        iframe.allow = 'autoplay; encrypted-media';
+        iframe.allowFullscreen = false;
+        iframe.frameBorder = '0';
+        iframe.style.cssText = 'position: absolute; top: 50%; left: 50%; width: 177.78vh; height: 56.25vw; min-width: 100%; min-height: 100%; transform: translate(-50%, -50%); pointer-events: none; border: none;';
+        
+        videoContainer.appendChild(iframe);
+        
+        // Use YouTube API to seek to timestamp once player is ready
+        function initializePlayer() {
+            if (typeof YT !== 'undefined' && YT.Player) {
+                player = new YT.Player('hero-youtube-player', {
+                    events: {
+                        'onReady': function(event) {
+                            // Seek to random timestamp when video is ready
+                            event.target.seekTo(timestamp, true);
+                        },
+                        'onStateChange': function(event) {
+                            // Ensure video loops properly and maintains timestamp
+                            if (event.data === YT.PlayerState.ENDED) {
+                                event.target.seekTo(timestamp, true);
+                                event.target.playVideo();
+                            }
+                        }
+                    }
+                });
+            } else {
+                // Retry if API not loaded yet
+                setTimeout(initializePlayer, 100);
+            }
+        }
+        
+        // Wait for YouTube API to be available
+        if (typeof YT !== 'undefined' && YT.Player) {
+            initializePlayer();
+        } else {
+            // Wait for API to load
+            window.addEventListener('load', function() {
+                setTimeout(initializePlayer, 500);
+            });
+        }
+    }
+    
+    // Load video when page loads
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadHeroVideo);
+    } else {
+        loadHeroVideo();
+    }
+})();
+
 // Logo Interactive Animation
 (function() {
     'use strict';

@@ -29,7 +29,7 @@ html {
 }
 
 body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-family: Georgia, 'Times New Roman', serif;
     color: var(--text-primary);
     background-color: var(--beige);
     line-height: 1.6;
@@ -68,9 +68,44 @@ body {
     overflow: hidden;
 }
 
+.hero-video-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    overflow: hidden;
+}
+
+.hero-video-container iframe {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 177.78vh; /* 16:9 aspect ratio based on height */
+    height: 56.25vw; /* 16:9 aspect ratio based on width */
+    min-width: 100%;
+    min-height: 100%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    border: none;
+}
+
+.hero-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(210, 105, 30, 0.5) 0%, rgba(62, 39, 35, 0.6) 100%);
+    z-index: 1;
+    pointer-events: none;
+}
+
 .hero-content {
     max-width: 800px;
-    z-index: 1;
+    z-index: 2;
+    position: relative;
 }
 
 .logo {
@@ -104,18 +139,21 @@ body {
 }
 
 .hero-title {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     font-size: 3rem;
     font-weight: 700;
-    color: var(--dark-brown);
+    color: #F5F5DC;
     margin-bottom: 20px;
     animation: fadeInUp 1s var(--animation-easing) 0.2s both;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
 }
 
 .hero-tagline {
     font-size: 1.5rem;
-    color: var(--text-secondary);
+    color: #F5F5DC;
     margin-bottom: 40px;
     animation: fadeInUp 1s var(--animation-easing) 0.4s both;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
 }
 
 .cta-button {
@@ -149,6 +187,7 @@ section {
 }
 
 .section-title {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     font-size: 2.5rem;
     font-weight: 700;
     color: var(--dark-brown);
@@ -205,6 +244,7 @@ section {
 }
 
 .service-card h3 {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     font-size: 1.5rem;
     color: var(--dark-brown);
     margin-bottom: 15px;
@@ -492,6 +532,7 @@ section {
 
 /* Footer */
 .footer {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     background-color: var(--dark-brown);
     color: var(--beige);
     padding: 50px 0 30px;
