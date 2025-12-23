@@ -617,6 +617,11 @@
         const colors = ['#D2691E', '#E67E22', '#F5F5DC', '#3E2723', '#B85A0F'];
         const particleCount = 30;
         
+        // Get the logo's position relative to the viewport
+        const logoRect = logo.getBoundingClientRect();
+        const logoCenterX = logoRect.left + logoRect.width / 2;
+        const logoCenterY = logoRect.top + logoRect.height / 2;
+        
         for (let i = 0; i < particleCount; i++) {
             const particle = document.createElement('div');
             const size = Math.random() * 8 + 4;
@@ -627,8 +632,8 @@
                 width: ${size}px;
                 height: ${size}px;
                 background-color: ${color};
-                left: ${logo.offsetLeft + logo.offsetWidth / 2}px;
-                top: ${logo.offsetTop + logo.offsetHeight / 2}px;
+                left: ${logoCenterX}px;
+                top: ${logoCenterY}px;
                 border-radius: 50%;
                 pointer-events: none;
                 z-index: 9999;
