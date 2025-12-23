@@ -532,6 +532,8 @@
     
     let clickCount = 0;
     let lastClickTime = 0;
+    let animationTimeout = null;
+    let isAnimating = false;
     
     // Function to create confetti particles
     function createConfetti() {
@@ -595,26 +597,51 @@
         clickCount++;
         lastClickTime = currentTime;
         
-        // Remove any existing animation classes
-        logo.classList.remove('clicked', 'bounce');
-        
-        // Trigger animation based on click count
-        void logo.offsetWidth; // Force reflow
-        
-        if (clickCount % 3 === 0) {
-            // Every 3rd click: bounce animation
-            logo.classList.add('bounce');
-            createConfetti();
-        } else {
-            // Regular clicks: spin animation
-            logo.classList.add('clicked');
-            createConfetti();
+        // Clear any pending timeout
+        if (animationTimeout) {
+            clearTimeout(animationTimeout);
+            animationTimeout = null;
         }
         
-        // Remove animation class after animation completes
-        setTimeout(() => {
-            logo.classList.remove('clicked', 'bounce');
-        }, 1000);
+        // Cancel any ongoing animation by removing classes and resetting
+        logo.classList.remove('clicked', 'bounce');
+        isAnimating = false;
+        
+        // Force a reflow to ensure class removal is processed
+        void logo.offsetWidth;
+        
+        // Use double requestAnimationFrame to ensure clean state before adding new animation
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                // Mark as animating
+                isAnimating = true;
+                
+                // Trigger animation based on click count
+                if (clickCount % 3 === 0) {
+                    // Every 3rd click: bounce animation
+                    logo.classList.add('bounce');
+                    createConfetti();
+                    
+                    // Remove animation class after animation completes
+                    animationTimeout = setTimeout(() => {
+                        logo.classList.remove('clicked', 'bounce');
+                        isAnimating = false;
+                        animationTimeout = null;
+                    }, 1800); // Bounce: 1.5s + 300ms buffer
+                } else {
+                    // Regular clicks: spin animation
+                    logo.classList.add('clicked');
+                    createConfetti();
+                    
+                    // Remove animation class after animation completes
+                    animationTimeout = setTimeout(() => {
+                        logo.classList.remove('clicked', 'bounce');
+                        isAnimating = false;
+                        animationTimeout = null;
+                    }, 1400); // Spin: 1.2s + 200ms buffer
+                }
+            });
+        });
     }
     
     // Add event listeners for both click and touch
