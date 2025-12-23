@@ -13,6 +13,10 @@
     const loginUrl = 'https://0307walkiesandwanders.petsoftware.net/clientportal/login';
     const registerUrl = 'https://0307walkiesandwanders.petsoftware.net/clientportal/login?action=signup';
     
+    // Set initial mode to login (since iframe starts with login URL)
+    iframe.parentElement.classList.add('login-mode');
+    iframe.classList.add('login-mode');
+    
     // Function to switch between login and register
     function switchMode(mode) {
         if (!loginButton || !registerButton) return;
@@ -23,11 +27,21 @@
             registerButton.classList.remove('active');
             iframe.src = loginUrl;
             iframe.title = 'Login Form';
+            // Add class to wrapper and iframe for login mode
+            iframe.parentElement.classList.add('login-mode');
+            iframe.parentElement.classList.remove('register-mode');
+            iframe.classList.add('login-mode');
+            iframe.classList.remove('register-mode');
         } else {
             registerButton.classList.add('active');
             loginButton.classList.remove('active');
             iframe.src = registerUrl;
             iframe.title = 'Registration Form';
+            // Add class to wrapper and iframe for register mode
+            iframe.parentElement.classList.add('register-mode');
+            iframe.parentElement.classList.remove('login-mode');
+            iframe.classList.add('register-mode');
+            iframe.classList.remove('login-mode');
         }
         
         // Show loading indicator
@@ -85,14 +99,18 @@
             if (iframe.contentDocument && iframe.contentDocument.body) {
                 const height = iframe.contentDocument.body.scrollHeight;
                 if (height > 0) {
-                    iframe.style.height = Math.max(height, 800) + 'px';
+                    // Use different minimum heights based on mode
+                    const minHeight = iframe.classList.contains('login-mode') ? 480 : 800;
+                    iframe.style.height = Math.max(height, minHeight) + 'px';
                     loadingIndicator.classList.add('hidden');
                 }
             }
         } catch (e) {
             // Cross-origin restrictions - this is expected
             // Set a larger default height to ensure full content is visible
-            iframe.style.height = '1200px';
+            // Use different heights based on mode
+            const defaultHeight = iframe.classList.contains('login-mode') ? '720px' : '1200px';
+            iframe.style.height = defaultHeight;
             clearInterval(resizeInterval);
         }
     }, 1000);
@@ -101,8 +119,11 @@
     setTimeout(function() {
         clearInterval(resizeInterval);
         // Ensure iframe has enough height to show full content
-        if (iframe.style.height === '' || parseInt(iframe.style.height) < 1000) {
-            iframe.style.height = '1200px';
+        // Use different heights based on mode
+        const minThreshold = iframe.classList.contains('login-mode') ? 600 : 1000;
+        const defaultHeight = iframe.classList.contains('login-mode') ? '720px' : '1200px';
+        if (iframe.style.height === '' || parseInt(iframe.style.height) < minThreshold) {
+            iframe.style.height = defaultHeight;
         }
     }, 10000);
 })();
