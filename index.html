@@ -56,19 +56,23 @@
     <!-- Registration Section -->
     <section class="registration" id="registration">
         <div class="container">
-            <h2 class="section-title">Register Your Dog</h2>
-            <p class="section-description">Sign up to book your dog walking services with us</p>
+            <h2 class="section-title">Login or Register</h2>
+            <p class="section-description">Sign in to your account or register to book your dog walking services with us</p>
             <div class="registration-container">
+                <div class="auth-buttons">
+                    <button class="auth-button active" id="login-button" data-mode="login">Login</button>
+                    <button class="auth-button" id="register-button" data-mode="register">Register</button>
+                </div>
                 <div class="iframe-wrapper">
                     <iframe 
                         id="registration-iframe"
-                        src="https://0307walkiesandwanders.petsoftware.net/clientportal/login?action=signup"
-                        title="Registration Form"
+                        src="https://0307walkiesandwanders.petsoftware.net/clientportal/login"
+                        title="Login Form"
                         frameborder="0"
                         scrolling="yes"
                         allowtransparency="true">
                     </iframe>
-                    <div class="iframe-loading" id="iframe-loading">Loading registration form...</div>
+                    <div class="iframe-loading" id="iframe-loading">Loading...</div>
                 </div>
             </div>
         </div>

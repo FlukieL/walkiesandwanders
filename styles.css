@@ -80,7 +80,27 @@ body {
     display: block;
     border-radius: 50%;
     box-shadow: 0 10px 30px rgba(62, 39, 35, 0.2);
-    animation: fadeInScale 1s var(--animation-easing);
+    animation: fadeInScale 1s var(--animation-easing), logoFloat 3s ease-in-out infinite;
+    cursor: pointer;
+    transition: transform 0.3s var(--animation-easing);
+    position: relative;
+}
+
+.logo:hover {
+    transform: scale(1.1);
+    box-shadow: 0 15px 40px rgba(62, 39, 35, 0.3);
+}
+
+.logo:active {
+    transform: scale(0.95);
+}
+
+.logo.clicked {
+    animation: fadeInScale 1s var(--animation-easing), logoFloat 3s ease-in-out infinite, logoSpin 0.6s ease-in-out;
+}
+
+.logo.bounce {
+    animation: fadeInScale 1s var(--animation-easing), logoFloat 3s ease-in-out infinite, logoBounce 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
 .hero-title {
@@ -215,6 +235,44 @@ section {
                 transform var(--animation-duration) var(--animation-easing);
 }
 
+.auth-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+
+.auth-button {
+    padding: 12px 40px;
+    background-color: var(--white);
+    color: var(--text-primary);
+    border: 2px solid var(--burnt-orange);
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s var(--animation-easing);
+    box-shadow: 0 2px 10px rgba(62, 39, 35, 0.1);
+}
+
+.auth-button:hover {
+    background-color: var(--burnt-orange-light);
+    color: var(--white);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(210, 105, 30, 0.3);
+}
+
+.auth-button.active {
+    background-color: var(--burnt-orange);
+    color: var(--white);
+    box-shadow: 0 4px 15px rgba(210, 105, 30, 0.3);
+}
+
+.auth-button.active:hover {
+    background-color: var(--burnt-orange-dark);
+}
+
 .iframe-wrapper {
     position: relative;
     width: 100%;
@@ -293,13 +351,13 @@ section {
 
 .instagram-feed {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 20px;
     margin-top: 30px;
+    align-items: start;
 }
 
 .instagram-post {
-    aspect-ratio: 1;
     background-color: var(--white);
     border-radius: 15px;
     overflow: hidden;
@@ -307,6 +365,10 @@ section {
     opacity: 0;
     transform: scale(0.9);
     transition: all 0.3s var(--animation-easing);
+    display: flex;
+    align-items: stretch;
+    padding: 0;
+    width: 100%;
 }
 
 .instagram-post.animate {
@@ -315,20 +377,46 @@ section {
 }
 
 .instagram-post:hover {
-    transform: scale(1.05);
+    transform: scale(1.02);
     box-shadow: 0 5px 20px rgba(62, 39, 35, 0.15);
 }
 
-.instagram-post img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+.instagram-post blockquote.instagram-media {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 15px !important;
+    overflow: hidden;
+    background: #FFF !important;
 }
 
-.instagram-post a {
+.instagram-post blockquote.instagram-media iframe {
+    width: 100% !important;
+    border: none !important;
     display: block;
+    border-radius: 15px;
+}
+
+.instagram-placeholder {
+    min-height: 400px;
     width: 100%;
-    height: 100%;
+    background-color: var(--beige);
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    font-size: 1rem;
+    transition: opacity 0.3s var(--animation-easing);
+    position: relative;
+}
+
+.instagram-placeholder::before {
+    content: '📷';
+    font-size: 2.5rem;
+    opacity: 0.4;
 }
 
 /* Contact Section */
@@ -520,6 +608,42 @@ section {
     }
 }
 
+@keyframes logoFloat {
+    0%, 100% {
+        transform: translateY(0px) rotate(0deg);
+    }
+    50% {
+        transform: translateY(-10px) rotate(2deg);
+    }
+}
+
+@keyframes logoSpin {
+    0% {
+        transform: translateY(0px) rotate(0deg) scale(1);
+    }
+    50% {
+        transform: translateY(-15px) rotate(180deg) scale(1.15);
+    }
+    100% {
+        transform: translateY(0px) rotate(360deg) scale(1);
+    }
+}
+
+@keyframes logoBounce {
+    0%, 100% {
+        transform: translateY(0px) scale(1);
+    }
+    25% {
+        transform: translateY(-30px) scale(1.2);
+    }
+    50% {
+        transform: translateY(10px) scale(0.9);
+    }
+    75% {
+        transform: translateY(-15px) scale(1.1);
+    }
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .hero-title {
@@ -564,8 +688,17 @@ section {
     }
     
     .instagram-feed {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        grid-template-columns: 1fr;
         gap: 15px;
+    }
+    
+    .instagram-post blockquote.instagram-media {
+        min-width: 100% !important;
+        max-width: 100% !important;
+    }
+    
+    .instagram-post blockquote.instagram-media iframe {
+        min-height: 500px;
     }
 }
 

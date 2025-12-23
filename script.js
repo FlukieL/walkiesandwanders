@@ -4,8 +4,49 @@
     
     const iframe = document.getElementById('registration-iframe');
     const loadingIndicator = document.getElementById('iframe-loading');
+    const loginButton = document.getElementById('login-button');
+    const registerButton = document.getElementById('register-button');
     
     if (!iframe || !loadingIndicator) return;
+    
+    // URLs for login and register
+    const loginUrl = 'https://0307walkiesandwanders.petsoftware.net/clientportal/login';
+    const registerUrl = 'https://0307walkiesandwanders.petsoftware.net/clientportal/login?action=signup';
+    
+    // Function to switch between login and register
+    function switchMode(mode) {
+        if (!loginButton || !registerButton) return;
+        
+        // Update button states
+        if (mode === 'login') {
+            loginButton.classList.add('active');
+            registerButton.classList.remove('active');
+            iframe.src = loginUrl;
+            iframe.title = 'Login Form';
+        } else {
+            registerButton.classList.add('active');
+            loginButton.classList.remove('active');
+            iframe.src = registerUrl;
+            iframe.title = 'Registration Form';
+        }
+        
+        // Show loading indicator
+        loadingIndicator.classList.remove('hidden');
+        loadingIndicator.textContent = 'Loading...';
+    }
+    
+    // Add event listeners to buttons
+    if (loginButton) {
+        loginButton.addEventListener('click', function() {
+            switchMode('login');
+        });
+    }
+    
+    if (registerButton) {
+        registerButton.addEventListener('click', function() {
+            switchMode('register');
+        });
+    }
     
     // Handle iframe load
     iframe.addEventListener('load', function() {
@@ -91,69 +132,163 @@
         }
     }
     
-    // Function to fetch Instagram post data using oEmbed API via backend proxy
-    async function fetchInstagramPost(postUrl) {
+    // Function to normalise Instagram post URL to standard embed format
+    function normaliseInstagramUrl(url) {
         try {
-            // Use our backend proxy to avoid CORS issues
-            const proxyUrl = `/api/instagram-oembed?url=${encodeURIComponent(postUrl)}`;
-            const response = await fetch(proxyUrl);
+            // Extract post ID from various Instagram URL formats
+            // Formats: /p/POST_ID/, /reel/POST_ID/, /username/p/POST_ID/, /username/reel/POST_ID/
+            const patterns = [
+                /instagram\.com\/p\/([A-Za-z0-9_-]+)/,
+                /instagram\.com\/reel\/([A-Za-z0-9_-]+)/,
+                /instagram\.com\/[^\/]+\/p\/([A-Za-z0-9_-]+)/,
+                /instagram\.com\/[^\/]+\/reel\/([A-Za-z0-9_-]+)/
+            ];
             
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(`HTTP error! status: ${response.status} - ${errorData.error || response.statusText}`);
+            let postId = null;
+            let isReel = false;
+            
+            for (const pattern of patterns) {
+                const match = url.match(pattern);
+                if (match) {
+                    postId = match[1];
+                    isReel = pattern.source.includes('reel');
+                    break;
+                }
             }
             
-            const data = await response.json();
-            
-            if (data.error) {
-                throw new Error(data.error);
+            if (postId) {
+                // Return standard Instagram embed URL format
+                const postType = isReel ? 'reel' : 'p';
+                return `https://www.instagram.com/${postType}/${postId}/`;
             }
             
-            return {
-                thumbnailUrl: data.thumbnail_url,
-                title: data.title || 'Instagram Post',
-                author: data.author_name || instagramUsername,
-                postUrl: postUrl
-            };
-        } catch (error) {
-            console.error('Error fetching Instagram post:', error, 'URL:', postUrl);
-            return null;
+            // If no pattern matches, try to clean up the URL
+            const urlObj = new URL(url);
+            urlObj.search = '';
+            urlObj.hash = '';
+            return urlObj.toString().replace(/\/$/, '');
+        } catch (e) {
+            // If URL parsing fails, return as-is
+            console.warn('Failed to normalise Instagram URL:', url, e);
+            return url;
         }
     }
     
-    // Function to create Instagram post element with real image
-    function createInstagramPost(postData) {
+    // Store post URLs and loaded state
+    let postUrls = [];
+    let embedScriptLoaded = false;
+    const loadedEmbeds = new Map(); // Track which posts have embeds loaded
+    
+    // Function to create placeholder div for Instagram post (without embed)
+    function createPostPlaceholder(postUrl, index) {
         const postDiv = document.createElement('div');
         postDiv.className = 'instagram-post';
+        postDiv.dataset.postUrl = postUrl;
+        postDiv.dataset.postIndex = index;
         
-        const link = document.createElement('a');
-        link.href = postData.postUrl;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        link.title = postData.title;
+        // Add staggered animation delay
+        postDiv.style.transitionDelay = (index * 0.1) + 's';
         
-        const img = document.createElement('img');
-        img.src = postData.thumbnailUrl;
-        img.alt = postData.title;
-        img.loading = 'lazy';
-        
-        // Handle image load errors
-        img.onerror = function() {
-            // Fallback to placeholder if image fails to load
-            img.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="250" height="250"%3E%3Crect fill="%23f5f5dc" width="250" height="250"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%233e2723" font-family="Arial" font-size="14"%3EInstagram Post%3C/text%3E%3C/svg%3E';
-        };
-        
-        link.appendChild(img);
-        postDiv.appendChild(link);
+        // Create a placeholder div to maintain height
+        const placeholder = document.createElement('div');
+        placeholder.className = 'instagram-placeholder';
+        postDiv.appendChild(placeholder);
         
         return postDiv;
     }
     
-    // Function to load Instagram feed
+    // Function to load Instagram embed into a post container
+    function loadEmbedIntoPost(postDiv) {
+        const postUrl = postDiv.dataset.postUrl;
+        if (!postUrl || loadedEmbeds.has(postDiv)) {
+            return; // Already loaded or no URL
+        }
+        
+        // Normalise the URL
+        const normalisedUrl = normaliseInstagramUrl(postUrl);
+        
+        // Remove placeholder
+        const placeholder = postDiv.querySelector('.instagram-placeholder');
+        if (placeholder) {
+            placeholder.remove();
+        }
+        
+        // Create native Instagram embed blockquote
+        const blockquote = document.createElement('blockquote');
+        blockquote.className = 'instagram-media';
+        blockquote.setAttribute('data-instgrm-permalink', normalisedUrl);
+        blockquote.setAttribute('data-instgrm-version', '14');
+        
+        // Set inline styles to match Instagram's default but allow CSS override
+        blockquote.style.cssText = 'background:#FFF; border:0; border-radius:3px; box-shadow:0 0 1px 0 rgba(0,0,0,0.5),0 1px 10px 0 rgba(0,0,0,0.15); margin: 1px; max-width:540px; min-width:326px; padding:0; width:99.375%; width:-webkit-calc(100% - 2px); width:calc(100% - 2px);';
+        
+        postDiv.appendChild(blockquote);
+        loadedEmbeds.set(postDiv, true);
+        
+        // Process the embed if script is loaded
+        if (embedScriptLoaded && window.instgrm && window.instgrm.Embeds) {
+            try {
+                window.instgrm.Embeds.process();
+            } catch (error) {
+                console.error('Error processing Instagram embed:', error);
+            }
+        }
+        
+        // Trigger animation
+        setTimeout(function() {
+            postDiv.classList.add('animate');
+        }, 100);
+    }
+    
+    // Function to unload Instagram embed from a post container
+    function unloadEmbedFromPost(postDiv) {
+        const blockquote = postDiv.querySelector('blockquote.instagram-media');
+        if (blockquote) {
+            blockquote.remove();
+            loadedEmbeds.delete(postDiv);
+            
+            // Create placeholder again
+            const placeholder = document.createElement('div');
+            placeholder.className = 'instagram-placeholder';
+            postDiv.appendChild(placeholder);
+            
+            postDiv.classList.remove('animate');
+        }
+    }
+    
+    // Function to load Instagram embed script
+    function loadEmbedScript() {
+        const existingScript = document.querySelector('script[src*="instagram.com/embed.js"]');
+        
+        if (existingScript) {
+            embedScriptLoaded = true;
+            return;
+        }
+        
+        const script = document.createElement('script');
+        script.src = 'https://www.instagram.com/embed.js';
+        script.async = true;
+        
+        script.onload = function() {
+            embedScriptLoaded = true;
+            // Process any existing embeds
+            if (window.instgrm && window.instgrm.Embeds) {
+                window.instgrm.Embeds.process();
+            }
+        };
+        
+        script.onerror = function() {
+            console.error('Failed to load Instagram embed script');
+        };
+        
+        document.body.appendChild(script);
+    }
+    
+    // Function to load Instagram feed with lazy loading
     async function loadInstagramFeed() {
         try {
             // Load post URLs from JSON file
-            const postUrls = await loadPostUrls();
+            postUrls = await loadPostUrls();
             
             console.log('Loaded post URLs:', postUrls.length);
             
@@ -161,39 +296,45 @@
                 // Show loading state
                 instagramFeed.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">Loading Instagram posts...</p>';
                 
-                // Fetch all posts in parallel
-                const postPromises = postUrls.map(url => fetchInstagramPost(url));
-                const postDataArray = await Promise.all(postPromises);
+                // Load the embed script
+                loadEmbedScript();
                 
-                // Filter out any failed requests
-                const validPosts = postDataArray.filter(post => post !== null);
+                // Clear loading message
+                instagramFeed.innerHTML = '';
                 
-                console.log(`Successfully loaded ${validPosts.length} out of ${postUrls.length} posts`);
+                // Create placeholder divs for all posts (without embeds)
+                postUrls.forEach((postUrl, index) => {
+                    const placeholder = createPostPlaceholder(postUrl, index);
+                    instagramFeed.appendChild(placeholder);
+                });
                 
-                if (validPosts.length > 0) {
-                    // Clear loading message
-                    instagramFeed.innerHTML = '';
-                    
-                    // Create post elements with real images
-                    validPosts.forEach((postData, index) => {
-                        const postElement = createInstagramPost(postData);
-                        postElement.style.transitionDelay = (index * 0.1) + 's';
-                        instagramFeed.appendChild(postElement);
+                // Set up IntersectionObserver for lazy loading
+                const observerOptions = {
+                    root: null,
+                    rootMargin: '100px', // Start loading 100px before entering viewport
+                    threshold: 0.1
+                };
+                
+                const observer = new IntersectionObserver(function(entries) {
+                    entries.forEach(entry => {
+                        const postDiv = entry.target;
+                        
+                        if (entry.isIntersecting) {
+                            // Post is visible, load the embed
+                            loadEmbedIntoPost(postDiv);
+                        } else {
+                            // Post is not visible, unload the embed
+                            unloadEmbedFromPost(postDiv);
+                        }
                     });
-                    
-                    // Trigger animations
-                    setTimeout(function() {
-                        const posts = instagramFeed.querySelectorAll('.instagram-post');
-                        posts.forEach((post, index) => {
-                            setTimeout(function() {
-                                post.classList.add('animate');
-                            }, index * 100);
-                        });
-                    }, 100);
-                } else {
-                    // All requests failed, show fallback with more details
-                    showFallback('All Instagram post requests failed. Please check the browser console for details.');
-                }
+                }, observerOptions);
+                
+                // Observe all post containers
+                const postContainers = instagramFeed.querySelectorAll('.instagram-post');
+                postContainers.forEach(container => {
+                    observer.observe(container);
+                });
+                
             } else {
                 // No post URLs found in JSON file
                 showFallback('No post URLs found in instagram-posts.json');
@@ -379,6 +520,115 @@
     // Hide loading spinner when page is fully loaded
     window.addEventListener('load', function() {
         document.body.classList.add('loaded');
+    });
+})();
+
+// Logo Interactive Animation
+(function() {
+    'use strict';
+    
+    const logo = document.querySelector('.logo');
+    if (!logo) return;
+    
+    let clickCount = 0;
+    let lastClickTime = 0;
+    
+    // Function to create confetti particles
+    function createConfetti() {
+        const colors = ['#D2691E', '#E67E22', '#F5F5DC', '#3E2723', '#B85A0F'];
+        const particleCount = 30;
+        
+        for (let i = 0; i < particleCount; i++) {
+            const particle = document.createElement('div');
+            const size = Math.random() * 8 + 4;
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            
+            particle.style.cssText = `
+                position: fixed;
+                width: ${size}px;
+                height: ${size}px;
+                background-color: ${color};
+                left: ${logo.offsetLeft + logo.offsetWidth / 2}px;
+                top: ${logo.offsetTop + logo.offsetHeight / 2}px;
+                border-radius: 50%;
+                pointer-events: none;
+                z-index: 9999;
+                opacity: 0.9;
+            `;
+            
+            document.body.appendChild(particle);
+            
+            const angle = (Math.PI * 2 * i) / particleCount;
+            const velocity = Math.random() * 200 + 100;
+            const vx = Math.cos(angle) * velocity;
+            const vy = Math.sin(angle) * velocity;
+            const rotation = Math.random() * 720 - 360;
+            
+            particle.animate([
+                {
+                    transform: 'translate(0, 0) rotate(0deg) scale(1)',
+                    opacity: 0.9
+                },
+                {
+                    transform: `translate(${vx}px, ${vy}px) rotate(${rotation}deg) scale(0)`,
+                    opacity: 0
+                }
+            ], {
+                duration: 1000 + Math.random() * 500,
+                easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+            }).onfinish = () => particle.remove();
+        }
+    }
+    
+    // Function to handle logo click/tap
+    function handleLogoInteraction(e) {
+        e.preventDefault();
+        
+        const currentTime = Date.now();
+        const timeSinceLastClick = currentTime - lastClickTime;
+        
+        // Reset click count if more than 2 seconds have passed
+        if (timeSinceLastClick > 2000) {
+            clickCount = 0;
+        }
+        
+        clickCount++;
+        lastClickTime = currentTime;
+        
+        // Remove any existing animation classes
+        logo.classList.remove('clicked', 'bounce');
+        
+        // Trigger animation based on click count
+        void logo.offsetWidth; // Force reflow
+        
+        if (clickCount % 3 === 0) {
+            // Every 3rd click: bounce animation
+            logo.classList.add('bounce');
+            createConfetti();
+        } else {
+            // Regular clicks: spin animation
+            logo.classList.add('clicked');
+            createConfetti();
+        }
+        
+        // Remove animation class after animation completes
+        setTimeout(() => {
+            logo.classList.remove('clicked', 'bounce');
+        }, 1000);
+    }
+    
+    // Add event listeners for both click and touch
+    logo.addEventListener('click', handleLogoInteraction);
+    
+    // Touch handlers with visual feedback
+    logo.addEventListener('touchstart', function() {
+        logo.style.opacity = '0.8';
+    });
+    
+    logo.addEventListener('touchend', function(e) {
+        e.preventDefault();
+        logo.style.opacity = '1';
+        handleLogoInteraction(e);
     });
 })();
 
